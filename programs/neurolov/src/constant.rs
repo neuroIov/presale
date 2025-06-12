@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::pubkey; // Updated import for pubkey! macro
+use anchor_lang::solana_program::pubkey; 
 
 pub const PRESALE_SEED: &[u8] = b"presale";
 

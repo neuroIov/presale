@@ -1,12 +1,12 @@
 [package]
-name = "presale" # Assuming your program name is "presale" based on module imports in lib.rs
+name = "presale" 
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "presale" # This should match the 'name' in your programs.localnet in Anchor.toml if different from 'neurolov'
+name = "presale" 
 
 [features]
 no-entrypoint = []
@@ -14,9 +14,8 @@ no-idl = []
 no-cpi = []
 default = []
 cpi = ["no-entrypoint"]
-idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"] # Added "anchor-spl/idl-build" to propagate feature
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"] 
 
 [dependencies]
-anchor-lang = { version = "0.31.1", features = ["derive"] } # Updated to 0.31.1
-anchor-spl = { version = "0.31.1", features = ["spl-token", "metadata"] } # Updated to 0.31.1
-# solana-program = "1.18.0" # Removed: Will now use anchor_lang::solana_program
+anchor-lang = { version = "0.31.1", features = ["derive"] } 
+anchor-spl = { version = "0.31.1", features = ["spl-token", "metadata"] } 

@@ -104,9 +104,9 @@ async fn test_initialize_presale() {
 
     let admin = Keypair::new();
     let token_mint_authority = Keypair::new();
-    let presale_token_mint = Keypair::new(); // Represents DYAWN token mint
+    let presale_token_mint = Keypair::new(); // Represents NLOV token mint
 
-    // Mock token mint for DYAWN
+    // Mock token mint for NLOV
     program_test.add_account(
         presale_token_mint.pubkey(),
         solana_sdk::account::Account::new(
@@ -124,7 +124,7 @@ async fn test_initialize_presale() {
         &presale_token_mint.pubkey(),
         &token_mint_authority.pubkey(),
         None,
-        9, // DYAWN token decimals
+        9, // NLOV token decimals
     )
     .unwrap();
 
@@ -389,7 +389,7 @@ async fn test_buy_tokens_sol() {
     let admin = Keypair::new();
     let buyer = Keypair::new();
     let token_mint_authority = Keypair::new();
-    let presale_token_mint = Keypair::new(); // DYAWN token
+    let presale_token_mint = Keypair::new(); // NLOV token
     let merchant_wallet = Keypair::new();
 
     program_test.add_account(
@@ -413,13 +413,13 @@ async fn test_buy_tokens_sol() {
 
     let mut context = program_test.start().await;
 
-    // Initialize DYAWN mint
+    // Initialize NLOV mint
     let create_mint_ix = token::initialize_mint(
         &token::ID,
         &presale_token_mint.pubkey(),
         &token_mint_authority.pubkey(),
         None,
-        9, // DYAWN token decimals
+        9, // NLOV token decimals
     )
     .unwrap();
     let mut transaction = Transaction::new_with_payer(
@@ -473,7 +473,7 @@ async fn test_buy_tokens_sol() {
     transaction.sign(&[&context.payer, &admin], context.last_blockhash);
     context.banks_client.process_transaction(transaction).await.unwrap();
 
-    // Mint some DYAWN tokens to the presale wallet
+    // Mint some NLOV tokens to the presale wallet
     mint_to(
         &mut context,
         &presale_token_mint.pubkey(),
@@ -628,12 +628,12 @@ async fn test_buy_tokens_stable_coin() {
 
     let admin = Keypair::new();
     let buyer = Keypair::new();
-    let token_mint_authority = Keypair::new(); // DYAWN mint authority
-    let presale_token_mint = Keypair::new(); // DYAWN token
+    let token_mint_authority = Keypair::new(); // NLOV mint authority
+    let presale_token_mint = Keypair::new(); // NLOV token
     let stable_coin_mint_authority = Keypair::new(); // USDC/USDT mint authority
     let merchant_wallet = Keypair::new();
 
-    // Mock token mint for DYAWN
+    // Mock token mint for NLOV
     program_test.add_account(
         presale_token_mint.pubkey(),
         solana_sdk::account::Account::new(
@@ -665,17 +665,17 @@ async fn test_buy_tokens_stable_coin() {
 
     let mut context = program_test.start().await;
 
-    // Initialize DYAWN mint
-    let create_dyawn_mint_ix = token::initialize_mint(
+    // Initialize NLOV mint
+    let create_NLOV_mint_ix = token::initialize_mint(
         &token::ID,
         &presale_token_mint.pubkey(),
         &token_mint_authority.pubkey(),
         None,
-        9, // DYAWN token decimals
+        9, // NLOV token decimals
     )
     .unwrap();
     let mut transaction = Transaction::new_with_payer(
-        &[create_dyawn_mint_ix],
+        &[create_NLOV_mint_ix],
         Some(&context.payer.pubkey()),
     );
     transaction.sign(&[&context.payer, &presale_token_mint], context.last_blockhash);
@@ -744,7 +744,7 @@ async fn test_buy_tokens_stable_coin() {
     transaction.sign(&[&context.payer, &admin], context.last_blockhash);
     context.banks_client.process_transaction(transaction).await.unwrap();
 
-    // Mint DYAWN to presale wallet
+    // Mint NLOV to presale wallet
     mint_to(
         &mut context,
         &presale_token_mint.pubkey(),
@@ -1303,7 +1303,7 @@ async fn test_finalize_presale() {
 
     let mut context = program_test.start().await;
 
-    // Initialize DYAWN mint
+    // Initialize NLOV mint
     let create_mint_ix = token::initialize_mint(
         &token::ID,
         &presale_token_mint.pubkey(),
