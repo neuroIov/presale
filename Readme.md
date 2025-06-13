@@ -26,7 +26,6 @@ This repo contains the  smart contract for the **NLOV token presale**, built usi
 - **Unsold Token Management:** After presale ends, remaining tokens can be transferred to a liquidity wallet for Public IDO/TGE.
 - **Audit-Ready Architecture:** Strong error handling, secure access control, and test coverage to support auditing.
 
----
 
 ## Setup 
 
@@ -64,9 +63,8 @@ Frontend interaction can be done via  **@solana/web3.js** or **Anchor TS client*
 
 IDL is available at:
 
-```
+
 target/idl/presale.json
-```
 
 Use it to build TypeScript or web clients.
 
