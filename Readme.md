@@ -55,11 +55,11 @@ Frontend interaction can be done via  **@solana/web3.js** or **Anchor TS client*
 
 ###  Instructions
 
-* **`initialize`** – Admin initializes the presale and sets the initial config.
-* **`set_stage`** – Admin updates the sale stage (Private → Public → Ended).
-* **`buy_tokens`** – Users purchase NLOV using SOL.
-* **`buy_tokens_by_stable_coin`** – Users purchase NLOV using USDC/USDT.
-* **`finalize_presale`** – Admin finalizes the presale and transfers unsold tokens to a liquidity wallet.
+* `initialize` – Admin initializes the presale and sets the initial config.
+* `set_stage` – Admin updates the sale stage (Private → Public → Ended).
+* `buy_tokens` – Users purchase NLOV using SOL.
+* `buy_tokens_by_stable_coin` – Users purchase NLOV using USDC/USDT.
+* `finalize_presale` – Admin finalizes the presale and transfers unsold tokens to a liquidity wallet.
 
 IDL is available at:
 
