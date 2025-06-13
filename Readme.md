@@ -11,20 +11,20 @@ This repo contains the  smart contract for the **NLOV token presale**, built usi
 
 ##  Features
 
-- **Multi-Stage Presale:** Configurable _Private Sale_ and _Public Sale_ phases with independent durations.
-- **Flexible Pricing:**
+- Multi-Stage Presale: Configurable _Private Sale_ and _Public Sale_ phases with independent durations.
+- Flexible Pricing:
   - `1 NLOV = $0.03 USD` (USDC/USDT)
   - `1 NLOV = 0.182 SOL`
-- **Dual Payment Modes:**
-  - **Web3:** Direct SOL or stablecoin payments on-chain.
-  - **Web2:** Off-chain payments with on-chain sale record tracking{ Exchnage wallets}
-- **Token Hardcap:** Maximum cap on total NLOV tokens sold during the entire presale.
-- **Admin Controls:**
+- Dual Payment Modes:
+  - Web3: Direct SOL or stablecoin payments on-chain.
+  - Web2: Off-chain payments with on-chain sale record tracking{ Exchnage wallets}
+- Token Hardcap:Maximum cap on total NLOV tokens sold during the entire presale.
+- Admin Controls:
   - Initialize presale
   - Update pricing, timings
   - Manage sale stages
-- **Unsold Token Management:** After presale ends, remaining tokens can be transferred to a liquidity wallet for Public IDO/TGE.
-- **Audit-Ready Architecture:** Strong error handling, secure access control, and test coverage to support auditing.
+- Unsold Token Management:After presale ends, remaining tokens can be transferred to a liquidity wallet for Public IDO/TGE.
+- Audit-Ready Architecture:Strong error handling, secure access control, and test coverage to support auditing.
 
 
 ## Setup 
