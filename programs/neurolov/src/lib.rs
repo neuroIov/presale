@@ -3,12 +3,12 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{self, Mint, Token, TokenAccount, Transfer as TokenTransfer},
 };
-use anchor_lang::solana_program::{program::invoke, system_instruction};
+use anchor_lang::solana_program::{program::invoke, system_instruction}; 
 
 pub mod constant;
-use constant::*;
+use constant::*; 
 
-declare_id!("Duf9UdBXfrxgBeZgZ2DUxRgFSZ4qCzEgGyxFmuQHGHZH");
+declare_id!("Duf9UdBXfrxgBeZgZ2DUxRgFSZ4qCzEgGyxFmuQHGHZH"); 
 
 #[program]
 pub mod presale {
@@ -18,11 +18,11 @@ pub mod presale {
     /// This function sets up the admin, prices, sale durations, hardcap, and wallet accounts.
     pub fn initialize(
         ctx: Context<Initialize>,
-        usd_price_cents_per_nlov: u64,
-        sol_price_lamports_per_nlov: u64,
+        usd_price_cents_per_nlov: u64, 
+        sol_price_lamports_per_nlov: u64, 
         private_sale_duration_days: i64,
         public_sale_duration_days: i64,
-        hardcap_tokens: u64,
+        hardcap_tokens: u64, 
     ) -> Result<()> {
         let presale = &mut ctx.accounts.presale;
 
@@ -32,14 +32,16 @@ pub mod presale {
         presale.usd_price_cents_per_nlov = usd_price_cents_per_nlov;
         presale.sol_price_lamports_per_nlov = sol_price_lamports_per_nlov;
         presale.presale_start = Clock::get()?.unix_timestamp;
-        presale.private_sale_duration = private_sale_duration_days * 86400;
-        presale.public_sale_duration = public_sale_duration_days * 86400;
-        presale.sale_stage = 0;
+        presale.private_sale_duration = private_sale_duration_days * 86400; 
+        presale.public_sale_duration = public_sale_duration_days * 86400; 
+        presale.sale_stage = 0; 
         presale.total_sold = 0;
         presale.pool_created = false;
-        presale.hardcap_tokens = hardcap_tokens;
+        presale.hardcap_tokens = hardcap_tokens; 
+
         presale.presale_wallet = ctx.accounts.presale_wallet.key();
         presale.merchant_wallet = ctx.accounts.merchant_wallet.key();
+
         presale.bump = bump;
 
         msg!(
@@ -69,11 +71,13 @@ pub mod presale {
 
         match presale.sale_stage {
             0 => {
-                presale.presale_start = clock.unix_timestamp;
+                // Not Started -> Start Private Sale
+                presale.presale_start = clock.unix_timestamp; // Set start time when sale actually begins
                 presale.sale_stage = 1;
                 msg!("Private sale started at {}", presale.presale_start);
             }
             1 => {
+                // Private Sale -> Public Sale (after private_sale_duration)
                 require!(
                     clock.unix_timestamp >= presale.presale_start + presale.private_sale_duration,
                     PresaleError::PrivateSaleNotOver
@@ -82,7 +86,7 @@ pub mod presale {
                 msg!("Public sale started at {}", clock.unix_timestamp);
             }
             2 => {
-       
+                // Public Sale -> Sale Ended (after public_sale_duration, relative to private sale start)
                 require!(
                     clock.unix_timestamp
                         >= presale.presale_start
@@ -101,6 +105,8 @@ pub mod presale {
         Ok(())
     }
 
+    /// Updates the presale(private) and public sale durations.
+    /// Only the admin can perform this action, and it cannot be done after the sale has ended.
     pub fn update_sale_period(
         ctx: Context<UpdateSalePeriod>,
         new_private_sale_duration_days: i64,
@@ -113,6 +119,7 @@ pub mod presale {
             PresaleError::Unauthorized
         );
 
+        // Ensure the presale has not already ended
         require!(presale.sale_stage < 3, PresaleError::SaleAlreadyEnded);
 
         presale.private_sale_duration = new_private_sale_duration_days * 86400;
@@ -128,31 +135,38 @@ pub mod presale {
     }
 
     /// Allows a buyer to purchase tokens using SOL.
-    /// The function supports Web3 (on-chain SOL transfer) and Web2 
+    /// The function supports Web3 (on-chain SOL transfer) and Web2 (exchange) payment types.
     /// Calculates tokens based on SOL amount and current price, updates total_sold.
     pub fn buy_tokens(
         ctx: Context<BuyTokens>,
-        payment_type: u8,
+        payment_type: u8, // 0 = Web3, 1 = Web2 (for tracking, no on-chain SOL transfer for Web2)
         lamports_sent: u64,
     ) -> Result<()> {
         let presale = &mut ctx.accounts.presale;
         let buyer = &ctx.accounts.buyer;
-        let token_decimals = ctx.accounts.token_mint.decimals;
+        let token_decimals = ctx.accounts.token_mint.decimals; 
 
         require!(
             presale.sale_stage == 1 || presale.sale_stage == 2,
             PresaleError::PresaleNotActive
         );
 
+        // Calculate tokens to purchase based on SOL amount and the new SOL price per NLOV.
+        // NLOV price is 0.182 SOL, which is 182_000_000 lamports.
+        // We'll calculate total lamports needed for 1 NLOV based on the stored sol_price_lamports_per_nlov
         let tokens_to_purchase_user_units = lamports_sent
             .checked_div(presale.sol_price_lamports_per_nlov)
-            .ok_or(PresaleError::InvalidPrice)?;
+            .ok_or(PresaleError::InvalidPrice)?; 
 
         require!(tokens_to_purchase_user_units >= 1, PresaleError::InvalidPrice);
 
+
+        // Convert user-facing units to raw token units (with decimals) for internal tracking
         let tokens_to_purchase_raw =
             tokens_to_purchase_user_units.checked_mul(10u64.pow(token_decimals as u32)).unwrap();
 
+
+        // Enforce hardcap: Check if this purchase would exceed the hardcap
         require!(
             presale
                 .total_sold
@@ -162,8 +176,9 @@ pub mod presale {
             PresaleError::HardcapReached
         );
 
+        // Ensure enough tokens exist in the presale wallet for this purchase
         let available_presale_tokens_raw = ctx.accounts.presale_wallet.amount;
-        let tokens_currently_sold_raw = presale.total_sold;
+        let tokens_currently_sold_raw = presale.total_sold; 
 
         require!(
             available_presale_tokens_raw.saturating_sub(tokens_currently_sold_raw)
@@ -172,6 +187,7 @@ pub mod presale {
         );
 
         if payment_type == 0 {
+            // Web3 payment: Transfer SOL on-chain
             invoke(
                 &system_instruction::transfer(
                     &buyer.key(),
@@ -185,6 +201,7 @@ pub mod presale {
                 ],
             )?;
         } else if payment_type == 1 {
+            // Web2 payment: Assume off-chain payment occurred, no on-chain SOL transfer
             msg!(
                 "Web2 payment type selected. Assuming off-chain SOL payment of {} lamports.",
                 lamports_sent
@@ -193,6 +210,7 @@ pub mod presale {
             return Err(PresaleError::InvalidPaymentType.into());
         }
 
+        // Update `total_sold` with raw token units
         presale.total_sold = presale
             .total_sold
             .checked_add(tokens_to_purchase_raw)
@@ -200,9 +218,9 @@ pub mod presale {
 
         emit!(BuyTokensEvent {
             buyer: buyer.key(),
-            tokens_purchased: tokens_to_purchase_user_units,
+            tokens_purchased: tokens_to_purchase_user_units, 
             sol_spent: lamports_sent,
-            sol_price_lamports_per_nlov: presale.sol_price_lamports_per_nlov,
+            sol_price_lamports_per_nlov: presale.sol_price_lamports_per_nlov, 
             payment_type,
         });
 
@@ -217,11 +235,17 @@ pub mod presale {
         Ok(())
     }
 
+    /// Checks the remaining token balance in the presale wallet.
+    /// Returns the balance in user-facing units.
     pub fn check_presale_token_balance(ctx: Context<CheckPresaleTokenBalance>) -> Result<u64> {
         let presale = &ctx.accounts.presale;
-        let token_decimals = ctx.accounts.token_mint.decimals;
+        let token_decimals = ctx.accounts.token_mint.decimals; 
         let available_tokens_raw = ctx.accounts.presale_wallet.amount;
+
+        // Calculate remaining tokens in raw units (with decimals)
         let remaining_tokens_raw = available_tokens_raw.saturating_sub(presale.total_sold);
+
+        // Convert to user-facing units for display
         let remaining_tokens_user_units = remaining_tokens_raw / 10u64.pow(token_decimals as u32);
 
         msg!(
@@ -233,6 +257,8 @@ pub mod presale {
         Ok(remaining_tokens_user_units)
     }
 
+    /// Allows the admin to update the current sale price.
+    /// Can only be done while the presale is active (stages 1 or 2).
     pub fn update_sale_price(ctx: Context<UpdateSalePrice>, new_usd_price_cents: u64, new_sol_price_lamports: u64) -> Result<()> {
         let presale = &mut ctx.accounts.presale;
 
@@ -248,6 +274,7 @@ pub mod presale {
 
         presale.usd_price_cents_per_nlov = new_usd_price_cents;
         presale.sol_price_lamports_per_nlov = new_sol_price_lamports;
+
 
         emit!(UpdateSalePriceEvent {
             admin: ctx.accounts.admin.key(),
@@ -266,16 +293,20 @@ pub mod presale {
         Ok(())
     }
 
+    /// Allows a buyer to purchase tokens using a stablecoin (e.g., USDC or USDT).
+    /// Supports Web3 (on-chain stablecoin transfer) and Web2 (off-chain assumed) payment types.
+    /// Calculates tokens based on stablecoin amount and current price, updates total_sold.
     pub fn buy_tokens_by_stable_coin(
         ctx: Context<BuyTokensByStableCoin>,
-        payment_type: u8,
-        stable_coin_amount_user_units: u64,
+        payment_type: u8, // 0 = Web3, 1 = Web2 (for tracking, no on-chain stablecoin transfer for Web2)
+        stable_coin_amount_user_units: u64, // Amount in user-facing units 
     ) -> Result<()> {
         let presale = &mut ctx.accounts.presale;
         let buyer = &ctx.accounts.buyer;
-        let token_decimals = ctx.accounts.token_mint.decimals;
-        let stable_coin_decimals = ctx.accounts.stable_coin_mint.decimals;
+        let token_decimals = ctx.accounts.token_mint.decimals; 
+        let stable_coin_decimals = ctx.accounts.stable_coin_mint.decimals; 
 
+        // Check if the stablecoin mint is either USDC or USDT
         require!(
             ctx.accounts.stable_coin_mint.key() == USDC_ADDRESS
                 || ctx.accounts.stable_coin_mint.key() == USDT_ADDRESS,
@@ -292,18 +323,23 @@ pub mod presale {
             PresaleError::PresaleNotActive
         );
 
+        // Convert user-facing stable coin amount to raw units
         let stable_coin_amount_raw =
             stable_coin_amount_user_units.checked_mul(10u64.pow(stable_coin_decimals as u32)).unwrap();
 
-        let stable_coin_amount_cents = stable_coin_amount_user_units.checked_mul(100).unwrap();
+        // Calculate tokens to purchase based on stablecoin amount and the new USD price per NLOV.
+        // Convert stablecoin amount to cents (e.g., 1 USDC = 100 cents) then divide by NLOV price in cents.
+        let stable_coin_amount_cents = stable_coin_amount_user_units.checked_mul(100).unwrap(); // Stables have 6 decimals and are treated as 1:1 USD
 
         let tokens_to_purchase_user_units = stable_coin_amount_cents
             .checked_div(presale.usd_price_cents_per_nlov)
-            .ok_or(PresaleError::InvalidPrice)?;
+            .ok_or(PresaleError::InvalidPrice)?; 
 
+        // Convert user-facing units to raw token units (with decimals) for internal tracking
         let tokens_to_purchase_raw =
             tokens_to_purchase_user_units.checked_mul(10u64.pow(token_decimals as u32)).unwrap();
 
+        // Enforce hardcap: Check if this purchase would exceed the hardcap
         require!(
             presale
                 .total_sold
@@ -313,6 +349,7 @@ pub mod presale {
             PresaleError::HardcapReached
         );
 
+        // Ensure enough tokens exist in the presale wallet
         let available_presale_tokens_raw = ctx.accounts.presale_wallet.amount;
         let tokens_currently_sold_raw = presale.total_sold;
 
@@ -323,6 +360,7 @@ pub mod presale {
         );
 
         if payment_type == 0 {
+            // Web3 payment: Transfer stable coins on-chain
             token::transfer(
                 CpiContext::new(
                     ctx.accounts.token_program.to_account_info(),
@@ -332,14 +370,16 @@ pub mod presale {
                         authority: ctx.accounts.buyer.to_account_info(),
                     },
                 ),
-                stable_coin_amount_raw,
+                stable_coin_amount_raw,     
             )?;
         } else if payment_type == 1 {
+            // Web2 payment: Assume off-chain payment occurred, no on-chain stablecoin transfer
             msg!("Web2 payment type selected. Assuming off-chain stablecoin payment of {} (raw: {}).", stable_coin_amount_user_units, stable_coin_amount_raw);
         } else {
             return Err(PresaleError::InvalidPaymentType.into());
         }
 
+        // Update `total_sold` with raw token units
         presale.total_sold = presale
             .total_sold
             .checked_add(tokens_to_purchase_raw)
@@ -377,7 +417,7 @@ pub mod presale {
         let presale = &mut ctx.accounts.presale;
         let admin_key = ctx.accounts.admin.key();
         let bump = ctx.bumps.presale;
-        let token_decimals = ctx.accounts.token_mint.decimals; // Get actual token decimals
+        let token_decimals = ctx.accounts.token_mint.decimals; 
 
         require!(presale.admin == admin_key, PresaleError::Unauthorized);
 
@@ -428,49 +468,73 @@ pub mod presale {
     }
 }
 
+/// Accounts for the `initialize` instruction.
 #[derive(Accounts)]
 #[instruction(usd_price_cents_per_nlov: u64, sol_price_lamports_per_nlov: u64, private_sale_duration_days: i64, public_sale_duration_days: i64, hardcap_tokens: u64)]
 pub struct Initialize<'info> {
     #[account(mut)]
-    pub admin: Signer<'info>,
+    pub admin: Signer<'info>, // Admin who deploys the contract
+
     #[account(
         init,
         payer = admin,
-        seeds = [PRESALE_SEED, admin.key().as_ref()],
+        seeds = [PRESALE_SEED, admin.key().as_ref()], // Derive Presale PDA
         bump,
-        space = 8 + 32 + 8 + 8 + 8 + 8 + 8 + 1 + 8 + 1 + 32 + 32 + 8 + 1
+        space = 8 +  // Discriminator
+               32 +  // Admin pubkey
+               8 +   // Presale start
+               8 +   // USD price (cents)
+               8 +   // SOL price (lamports)
+               8 +   // Private sale duration (in seconds)
+               8 +   // Public sale duration (in seconds)
+               1 +   // Sale stage
+               8 +   // Total sold (raw units with decimals)
+               1 +   // Pool created flag
+               32 +  // Presale wallet Pubkey
+               32 +  // Merchant wallet Pubkey
+               8 +   // Hardcap tokens
+               1     // Bump
     )]
-    pub presale: Account<'info, Presale>,
-    pub token_mint: Account<'info, Mint>,
+    pub presale: Account<'info, Presale>, 
+
+    pub token_mint: Account<'info, Mint>, 
+
     #[account(init, payer = admin, token::mint = token_mint, token::authority = presale)]
     pub presale_wallet: Account<'info, TokenAccount>,
+
+    /// CHECK: This is a system account for receiving SOL. No specific constraints needed beyond its address.
     #[account(mut)]
     pub merchant_wallet: AccountInfo<'info>,
-    pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
+
+    pub system_program: Program<'info, System>, 
+    pub token_program: Program<'info, Token>,   
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
+/// Accounts for the `set_stage` instruction.
 #[derive(Accounts)]
 pub struct SetStage<'info> {
     #[account(mut)]
-    pub admin: Signer<'info>,
+    pub admin: Signer<'info>, // Only admin can change sale stage
+
     #[account(
         mut,
-        has_one = admin,
+        has_one = admin, // Ensures the stored presale.admin matches the Signer
         seeds = [PRESALE_SEED, admin.key().as_ref()],
         bump
     )]
-    pub presale: Account<'info, Prescale>,
+    pub presale: Account<'info, Presale>,
 }
 
+/// Accounts for the `update_sale_period` instruction.
 #[derive(Accounts)]
 pub struct UpdateSalePeriod<'info> {
     #[account(mut)]
-    pub admin: Signer<'info>,
+    pub admin: Signer<'info>, // Only the admin can update the sale period
+
     #[account(
         mut,
-        has_one = admin,
+        has_one = admin, // Ensures only the admin can update the sale period
         seeds = [PRESALE_SEED, admin.key().as_ref()],
         bump
     )]
@@ -481,7 +545,7 @@ pub struct UpdateSalePeriod<'info> {
 #[derive(Accounts)]
 pub struct BuyTokens<'info> {
     #[account(mut)]
-    pub buyer: Signer<'info>, 
+    pub buyer: Signer<'info>, // The user buying tokens
 
     #[account(
         mut,
@@ -491,17 +555,17 @@ pub struct BuyTokens<'info> {
     pub presale: Account<'info, Presale>, 
 
     #[account(mut)]
-    pub presale_wallet: Account<'info, TokenAccount>, // Store presale tokens
+    pub presale_wallet: Account<'info, TokenAccount>, 
 
     #[account(mut, address = presale.merchant_wallet)]
     /// CHECK: Checked by presale.merchant_wallet
     pub merchant_wallet: AccountInfo<'info>,
 
-    pub token_mint: Account<'info, Mint>, 
+    pub token_mint: Account<'info, Mint>, // To get token decimals for calculations
 
-    pub system_program: Program<'info, System>, // Required for SOL transfer
-    pub token_program: Program<'info, Token>,   // Required for token transfers
-    pub associated_token_program: Program<'info, AssociatedToken>, // Required for ATA creation
+    pub system_program: Program<'info, System>, 
+    pub token_program: Program<'info, Token>,   
+    pub associated_token_program: Program<'info, AssociatedToken>, 
 }
 
 /// Accounts for the `check_presale_token_balance` instruction.
@@ -514,19 +578,20 @@ pub struct CheckPresaleTokenBalance<'info> {
     pub presale: Account<'info, Presale>, // Presale storage PDA
 
     #[account()]
-    pub presale_wallet: Account<'info, TokenAccount>, 
+    pub presale_wallet: Account<'info, TokenAccount>, // Store presale tokens
 
-    pub token_mint: Account<'info, Mint>, 
+    pub token_mint: Account<'info, Mint>, // To get token decimals for calculations
 }
 
 /// Accounts for the `update_sale_price` instruction.
 #[derive(Accounts)]
 pub struct UpdateSalePrice<'info> {
     #[account(mut)]
-    pub admin: Signer<'info>, // Only  admin 
+    pub admin: Signer<'info>, // Only the admin can update the price
+
     #[account(
         mut,
-        has_one = admin, // Ensures only  admin can update
+        has_one = admin, // Ensures only the admin can update
         seeds = [PRESALE_SEED, admin.key().as_ref()],
         bump
     )]
@@ -537,14 +602,14 @@ pub struct UpdateSalePrice<'info> {
 #[derive(Accounts)]
 pub struct BuyTokensByStableCoin<'info> {
     #[account(mut)]
-    pub buyer: Signer<'info>, 
+    pub buyer: Signer<'info>, // The user buying tokens
 
     #[account(
         mut,
         seeds = [PRESALE_SEED, presale.admin.as_ref()],
         bump,
     )]
-    pub presale: Account<'info, Presale>, 
+    pub presale: Account<'info, Presale>, // Presale storage PDA
 
     #[account(mut)]
     pub presale_wallet: Account<'info, TokenAccount>, // Presale token storage
@@ -558,11 +623,11 @@ pub struct BuyTokensByStableCoin<'info> {
     #[account()]
     pub stable_coin_mint: Account<'info, Mint>, // Stablecoin mint (USDC or USDT)
 
-    pub token_mint: Account<'info, Mint>, // To get token decimals for calculations
+    pub token_mint: Account<'info, Mint>, 
 
-    pub token_program: Program<'info, Token>, // Token Program
-    pub associated_token_program: Program<'info, AssociatedToken>, // Required for ATA creation
-    pub system_program: Program<'info, System>, // Required for ATA creation
+    pub token_program: Program<'info, Token>, 
+    pub associated_token_program: Program<'info, AssociatedToken>, 
+    pub system_program: Program<'info, System>, 
 }
 
 /// Accounts for the `finalize_presale` instruction.
@@ -590,11 +655,29 @@ pub struct FinalizePresale<'info> {
     pub token_program: Program<'info, Token>, 
 }
 
+/// Defines the state of the presale contract.
+#[account]
+pub struct Presale {
+    pub admin: Pubkey,              // Admin wallet address
+    pub presale_start: i64,         // Presale start timestamp (Unix time)
+    pub usd_price_cents_per_nlov: u64, // Price in USD cents per NLOV (e.g., 3 for $0.03)
+    pub sol_price_lamports_per_nlov: u64, // Price in SOL lamports per NLOV (e.g., 182_000_000 for 0.182 SOL)
+    pub private_sale_duration: i64, // Private sale duration (in seconds)
+    pub public_sale_duration: i64,  // Public sale duration (in seconds)
+    pub sale_stage: u8,             // Sale stage (0: Not started, 1: Private, 2: Public, 3: Ended)
+    pub total_sold: u64,            // Total tokens sold (in raw token units with decimals)
+    pub hardcap_tokens: u64,        // New: Maximum tokens to be sold in presale
+    pub pool_created: bool,         // Liquidity pool created flag
+    pub presale_wallet: Pubkey,     // Token account for presale
+    pub merchant_wallet: Pubkey,    // Wallet for receiving SOL/Stablecoin payments
+    pub bump: u8,                   // Store bump here
+}
+
 /// Event emitted when tokens are purchased with SOL.
 #[event]
 pub struct BuyTokensEvent {
     pub buyer: Pubkey,
-    pub tokens_purchased: u64,
+    pub tokens_purchased: u64, 
     pub sol_spent: u64,
     pub sol_price_lamports_per_nlov: u64, 
     pub payment_type: u8,
@@ -622,7 +705,10 @@ pub struct BuyTokensByStableCoinEvent {
 #[event]
 pub struct FinalizePresaleEvent {
     pub admin: Pubkey,
-    pub unsold_presale_tokens: u64,  codes for the presale program.
+    pub unsold_presale_tokens: u64, 
+}
+
+/// Custom error codes for the presale program.
 #[error_code]
 pub enum PresaleError {
     #[msg("Invalid token account provided.")]
@@ -650,9 +736,10 @@ pub enum PresaleError {
     InsufficientFunds,
 
     #[msg("Invalid stable token. Only USDC or USDT is accepted.")]
-    InvalidStableToken,
+    InvalidStableToken, 
 
-    #[msg("Not enoentStableCoin,
+    #[msg("Not enough stablecoin available for purchase.")]
+    InsufficientStableCoin,
 
     #[msg("Invalid payment type. Please choose 0 for Web3 or 1 for Web2.")]
     InvalidPaymentType,
@@ -670,5 +757,5 @@ pub enum PresaleError {
     NoUnsoldTokens,
 
     #[msg("Hardcap for tokens has been reached.")] 
-}
+    HardcapReached,
 }

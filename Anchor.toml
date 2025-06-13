@@ -1,13 +1,14 @@
 [toolchain]
 package_manager = "yarn"
-anchor_version = "0.31.1" # Added: Align with CLI version
+anchor_version = "0.31.1"
 
 [features]
 resolution = true
 skip-lint = false
 
-[programs.devnet]
-neurolov = "Duf9UdBXfrxgBeZgZ2DUxRgFSZ4qCzEgGyxFmuQHGHZH"
+
+[programs.devnet] 
+neurolov = "Duf9UdBXfrxgBeZgZ2DUxRgFSZ4qCzEgGyxFmuQHGHZH" 
 
 [registry]
 url = "https://api.apr.dev"

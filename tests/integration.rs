@@ -155,7 +155,7 @@ async fn test_initialize_presale() {
     let merchant_wallet = Keypair::new();
 
     let usd_price_cents_per_nlov = 3; // $0.03
-    let sol_price_lamports_per_nlov = 182_000_000; // 0.182 SOL
+    let sol_price_lamports_per_nlov = 182_000_000; 
     let private_sale_duration_days = 7;
     let public_sale_duration_days = 14;
     let hardcap_tokens = 1_000_000; // 1 million NLOV tokens
